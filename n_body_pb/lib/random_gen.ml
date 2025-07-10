@@ -5,7 +5,7 @@ let rec pow2 k =
 
 let cap_nb = pow2 30 (* resolution de 2**30 sur 2**30 *)
 
-let next (u:int) = (1_103_515_245 * uprev + 12_345) mod cap_nb
+let next (u:int) = (1_103_515_245 * u + 12_345) mod cap_nb
 
 let rec u (k:int) =
   if k = 0 then u0 else
