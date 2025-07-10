@@ -1,0 +1,60 @@
+type obj = Quadtree_str.obj
+type space_pos = Quadtree_str.space_pos
+type quadtree = Quadtree_str.quadtree
+
+let master_bg_color = Graphics.rgb 43 72 101
+let bg_color = Graphics.rgb 71 109 148
+let div_color = Graphics.rgb 97 161 225
+let point_color = Graphics.rgb 198 227 255
+
+let int_size_x, int_size_y = 1000, 1000
+let ext_size_x, ext_size_y = 1600, 1100
+
+let line_width = 3
+let point_radius = 3
+
+let canvas_to_window (x,y) =
+    let fx = (float (ext_size_x - int_size_x) )/.2. +. x *. float int_size_x
+    and fy = (float (ext_size_y - int_size_y) )/.2. +. y *. float int_size_y in
+    int_of_float fx, int_of_float fy
+
+let draw_div ((x,y,l) : space_pos) =
+    Graphics.set_color div_color;
+    let pvx, pvy = canvas_to_window (x, y -. l/.2.)
+    and phx, phy = canvas_to_window (x -. l/.2., y)
+    and dx = int_of_float (l *. float int_size_x)
+    and dy = int_of_float (l *. float int_size_y) in
+    Graphics.moveto pvx pvy;
+    Graphics.rlineto 0 dy;
+    Graphics.moveto phx phy;
+    Graphics.rlineto dx 0
+
+let draw_point ((_, x, y) : obj) =
+    Graphics.set_color point_color;
+    let px, py = canvas_to_window (x,y) in
+    Graphics.fill_circle px py point_radius
+
+let rec draw_explore (qt:quadtree) =
+    match qt with
+    |Void(_) -> ()
+    |Point(o,_) -> draw_point o
+    |Node(_, sp, qt0, qt1, qt2, qt3) ->
+        draw_div sp;
+        draw_explore qt0; draw_explore qt1; draw_explore qt2; draw_explore qt3
+
+let display_quadtree qt =
+    Graphics.open_graph (" "^ string_of_int ext_size_x ^ "x" ^ string_of_int ext_size_y);
+    Graphics.set_window_title "Quadtree graphic display";
+    Graphics.set_line_width line_width;
+
+    Graphics.set_color master_bg_color;
+    Graphics.fill_rect 0 (-1) ext_size_x ext_size_y;
+
+    let init_co_bg_x, init_co_bg_y = canvas_to_window (0., 0.) in
+    Graphics.set_color bg_color;
+    Graphics.fill_rect init_co_bg_x init_co_bg_y int_size_x int_size_y;
+
+    draw_explore qt;
+
+    let _ = Graphics.wait_next_event [Graphics.Key_pressed] in 
+    ()

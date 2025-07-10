@@ -1,11 +1,12 @@
-open Lib
+module Qt = Lib.Quadtree_str
+module Rand = Lib.Random_gen
+module Graph = Lib.Graphics_qt
 
-(*let init_qt = Quadtree_str.Void((0.5, 0.5, 1.))*)
-
-let print_int i = print_endline (string_of_int i)
+let n = 100
 
 let () = 
-  for k = 0 to 10 do
-    print_int (Random_gen.u k)
-  done
+  let obj_list = Rand.gen_simple_obj_list n in
+
+  let qt = List.fold_left Qt.add_obj Qt.init_qt obj_list in
   
+  Graph.display_quadtree qt

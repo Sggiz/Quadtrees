@@ -6,10 +6,12 @@ type quadtree =
     | Point of obj * space_pos
     | Node of obj * space_pos * quadtree * quadtree * quadtree * quadtree
 
+let init_qt = Void((0.5, 0.5, 1.))
+
 let get_direction (x_ref, y_ref) (x, y) =
     (* Direction repr par:
-            0 | 1
             2 | 3
+            0 | 1
     *)
     (if x <= x_ref then 0 else 1) + (if y <= y_ref then 0 else 2)
 
