@@ -18,6 +18,10 @@ let canvas_to_window (x,y) =
     and fy = (float (ext_size_y - int_size_y) )/.2. +. y *. float int_size_y in
     int_of_float fx, int_of_float fy
 
+let window_to_canvas (px, py) =
+    (float px -. float (ext_size_x - int_size_x)/.2.) /. float int_size_x,
+    (float py -. float (ext_size_y - int_size_y)/.2.) /. float int_size_y
+
 let draw_div ((x,y,l) : space_pos) =
     Graphics.set_color div_color;
     let pvx, pvy = canvas_to_window (x, y -. l/.2.)
@@ -42,7 +46,7 @@ let rec draw_explore (qt:quadtree) =
         draw_div sp;
         draw_explore qt0; draw_explore qt1; draw_explore qt2; draw_explore qt3
 
-let display_quadtree qt =
+let init_canvas () =
     Graphics.open_graph (" "^ string_of_int ext_size_x ^ "x" ^ string_of_int ext_size_y);
     Graphics.set_window_title "Quadtree graphic display";
     Graphics.set_line_width line_width;
@@ -52,9 +56,11 @@ let display_quadtree qt =
 
     let init_co_bg_x, init_co_bg_y = canvas_to_window (0., 0.) in
     Graphics.set_color bg_color;
+    Graphics.fill_rect init_co_bg_x init_co_bg_y int_size_x int_size_y
+
+let display_quadtree qt =
+    let init_co_bg_x, init_co_bg_y = canvas_to_window (0., 0.) in
+    Graphics.set_color bg_color;
     Graphics.fill_rect init_co_bg_x init_co_bg_y int_size_x int_size_y;
 
-    draw_explore qt;
-
-    let _ = Graphics.wait_next_event [Graphics.Key_pressed] in 
-    ()
+    draw_explore qt

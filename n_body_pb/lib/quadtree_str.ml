@@ -1,5 +1,5 @@
-type obj = float * float * float  (* masse, x, y*)
-type space_pos = float * float * float (* (midx, midy,sidelength) *)
+type obj = float * float * float  (* mass, x, y*)
+type space_pos = float * float * float (* (midx, midy, sidelength) *)
 
 type quadtree =
     | Void of space_pos
@@ -8,17 +8,23 @@ type quadtree =
 
 let init_qt = Void((0.5, 0.5, 1.))
 
+let min_l = 2. ** (-31.)
+
 let get_direction (x_ref, y_ref) (x, y) =
-    (* Direction repr par:
+    (* Direction represented in order :
             2 | 3
-            0 | 1
-    *)
+            0 | 1       *)
     (if x <= x_ref then 0 else 1) + (if y <= y_ref then 0 else 2)
 
 let rec add_obj (qt : quadtree) ((m,x,y) : obj) =
     match qt with
     |Void(sp) -> Point((m,x,y), sp)
     
+    (* Subdivision is limited by min_l, close points are merged by barycentre *)
+    |Point((m1,x1,y1), (xref,yref,l)) when l < min_l -> 
+        let ms = m +. m1 in
+        Point((ms, (m*.x +. m1*.x1)/.ms, (m*.y +. m1*.y1)/.ms), (xref,yref,l))
+
     |Point((m1,x1,y1), (xref, yref, l)) ->
         let d = l/.4. in
         let sp0 = (xref -. d, yref -. d, l/.2.)
