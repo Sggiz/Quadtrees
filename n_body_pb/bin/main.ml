@@ -15,12 +15,12 @@ let dynamic_quadtree () =
   let qt = ref Qt.init_qt in
   
   let decision (s : Graphics.status) =
-    if s.button then (
-      let x, y = Graph.window_to_canvas (s.mouse_x, s.mouse_y) in
-      qt := Qt.add_obj !qt (1., x, y);
-      Graph.display_quadtree !qt
-    )
-    else raise Exit
+    if not s.button then raise Exit
+    else let x, y = Graph.window_to_canvas (s.mouse_x, s.mouse_y) in
+    if 0. <= x && x <= 1. && 0. <= y && y <= 1. then (
+        qt := Qt.add_obj !qt (1., x, y);
+        Graph.display_quadtree !qt
+      )
   in
 
   Graph.init_canvas ();
