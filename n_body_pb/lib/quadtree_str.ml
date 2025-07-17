@@ -53,3 +53,24 @@ let rec add_obj (qt : quadtree) ((m,x,y) : obj) =
         |2 -> Node((0.,0.,0.), (xref,yref,l), qt0, qt1, (add_obj qt2 (m,x,y)), qt3)
         |3 -> Node((0.,0.,0.), (xref,yref,l), qt0, qt1, qt2, (add_obj qt3 (m,x,y)))
         |_->Void((0.,0.,0.))
+
+let get_cm (qt: quadtree) =
+    match qt with
+    |Void(_) -> (0., 0., 0.)
+    |Point(o, _) -> o
+    |Node(o, _, _, _, _, _) -> o
+
+let rec compute_cm (qt : quadtree) =
+    match qt with
+    |Node(_, sp, qt0, qt1, qt2, qt3) ->
+        let qa = Array.map compute_cm [|qt0; qt1; qt2; qt3|] in
+        let ms, xs, ys = ref 0., ref 0., ref 0. in
+        for i = 0 to 3 do
+            let m, x, y = get_cm qa.(i) in
+            ms := !ms +. m;
+            xs := !xs +. m*.x;
+            ys := !ys +. m*.y
+        done;
+        let o = (!ms, !xs /. !ms, !ys /. !ms) in
+        Node(o, sp, qa.(0), qa.(1), qa.(2), qa.(3))
+    |_ -> qt

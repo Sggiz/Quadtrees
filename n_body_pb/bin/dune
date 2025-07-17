@@ -1,7 +1,7 @@
 (executable
  (public_name n_body_pb)
  (name main)
- (libraries lib))
+ (libraries lib unix))
 
 (env
  (dev

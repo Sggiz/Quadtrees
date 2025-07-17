@@ -3,7 +3,7 @@ type space_pos = Quadtree_str.space_pos
 type quadtree = Quadtree_str.quadtree
 
 let master_bg_color = Graphics.rgb 43 72 101
-let bg_color = Graphics.rgb 71 109 148
+let bg_color = Graphics.rgb 20 30 40
 let div_color = Graphics.rgb 97 161 225
 let point_color = Graphics.rgb 198 227 255
 
@@ -11,7 +11,7 @@ let int_size_x, int_size_y = 1000, 1000
 let ext_size_x, ext_size_y = 1600, 1100
 
 let line_width = 3
-let point_radius = 3
+let point_radius = 1
 
 let canvas_to_window (x,y) =
     let fx = (float (ext_size_x - int_size_x) )/.2. +. x *. float int_size_x
@@ -58,9 +58,13 @@ let init_canvas () =
     Graphics.set_color bg_color;
     Graphics.fill_rect init_co_bg_x init_co_bg_y int_size_x int_size_y
 
-let display_quadtree qt =
+let clear_canvas () =
+    Graphics.set_color master_bg_color;
+    Graphics.fill_rect 0 (-1) ext_size_x ext_size_y;
     let init_co_bg_x, init_co_bg_y = canvas_to_window (0., 0.) in
     Graphics.set_color bg_color;
-    Graphics.fill_rect init_co_bg_x init_co_bg_y int_size_x int_size_y;
+    Graphics.fill_rect init_co_bg_x init_co_bg_y int_size_x int_size_y
 
+let display_quadtree qt =
+    clear_canvas ();
     draw_explore qt
