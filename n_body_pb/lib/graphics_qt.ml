@@ -59,11 +59,11 @@ let init_canvas () =
     Graphics.fill_rect init_co_bg_x init_co_bg_y int_size_x int_size_y
 
 let clear_canvas () =
-    Graphics.set_color master_bg_color;
-    Graphics.fill_rect 0 (-1) ext_size_x ext_size_y;
     let init_co_bg_x, init_co_bg_y = canvas_to_window (0., 0.) in
     Graphics.set_color bg_color;
-    Graphics.fill_rect init_co_bg_x init_co_bg_y int_size_x int_size_y
+    Graphics.fill_rect 
+        (init_co_bg_x - 2*point_radius) (init_co_bg_y - 2*point_radius) 
+        (int_size_x + 4*point_radius) (int_size_y + 4*point_radius)
 
 let display_quadtree qt =
     clear_canvas ();

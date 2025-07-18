@@ -1,6 +1,7 @@
 type obj = Quadtree_str.obj
 type space_pos = Quadtree_str.space_pos
 type quadtree = Quadtree_str.quadtree
+let is_obj_in_node = Quadtree_str.is_obj_in_node
 
 let g = 0.0001 (*constante de gravitation*)
 let theta = 1.
@@ -48,8 +49,9 @@ let rec update_state_naive oltot ol vl =
 let rec compute_acc_tot (qt: quadtree) (o: obj) =
     match qt with
     |Void(_) -> (0., 0.)
+    |Point(ast,_) when ast = o -> (0.,0.)
     |Point(ast,_) -> compute_acc o ast
-    |Node(cm, (_,_,l),_,_,_,_) when (l /. dist o cm) < theta -> compute_acc o cm
+    |Node(cm, (_,_,l),_,_,_,_) when not (is_obj_in_node o qt) && (l /. dist o cm) < theta -> compute_acc o cm
     |Node(_,_,qt0,qt1,qt2,qt3) ->
         let (fx0,fy0), (fx1,fy1), (fx2,fy2), (fx3,fy3) = 
         compute_acc_tot qt0 o, compute_acc_tot qt1 o, compute_acc_tot qt2 o, compute_acc_tot qt3 o in

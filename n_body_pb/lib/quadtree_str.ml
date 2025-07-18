@@ -10,6 +10,14 @@ let init_qt = Void((0.5, 0.5, 1.))
 
 let min_l = 2. ** (-31.)
 
+let is_obj_in_node o qt = 
+    match qt with
+    |Void(_) -> false
+    |Point(o0, _) -> o0 = o
+    |Node(_,(xref,yref,l),_,_,_,_) ->
+        let (_,x,y) = o in
+        abs_float (x -. xref) <= l/.2. && abs_float (y -. yref) <= l/.2.
+
 let get_direction (x_ref, y_ref) (x, y) =
     (* Direction represented in order :
             2 | 3
