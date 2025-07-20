@@ -2,21 +2,21 @@ module Qt = Lib.Quadtree_str
 module Rand = Lib.Random_gen
 module Graph = Lib.Graphics_qt
 module Phys = Lib.Physics_qt
+module Info = Lib.Info_display
 
 let static_quadtree n =
-  Graph.init_canvas ();
-
   let obj_list = Rand.gen_simple_obj_list n in
   let qt = List.fold_left Qt.add_obj Qt.init_qt obj_list in
 
   Graph.display_quadtree qt;
-  let _ = Graphics.wait_next_event [Graphics.Key_pressed] in ()
+  ignore (Graphics.wait_next_event [Graphics.Key_pressed]);
+  Graphics.close_graph ()
 
 let dynamic_quadtree () =
   let qt = ref Qt.init_qt in
   
   let decision (s : Graphics.status) =
-    if not s.button then raise Exit
+    if not s.button then Graphics.close_graph ()
     else 
       let x, y = Graph.window_to_canvas (s.mouse_x, s.mouse_y) in
       if 0. <= x && x <= 1. && 0. <= y && y <= 1. then (
@@ -25,7 +25,6 @@ let dynamic_quadtree () =
       )
   in
 
-  Graph.init_canvas ();
   Graphics.loop_at_exit [Graphics.Button_down; Graphics.Key_pressed] decision
 
 let manu_naive_grav_simulation () =
@@ -43,25 +42,24 @@ let manu_naive_grav_simulation () =
         Graph.draw_point (1.,x,y)
       );
       constr_pl ()
-    else if status.key = 'e' then raise Exit
+    else if status.key = 'e' then Graphics.close_graph ()
     else if status.key = ' ' then simul ()
 
   and simul () =
     if Graphics.key_pressed () then (
       let k = Graphics.read_key () in
       if k = ' ' then constr_pl () else
-      if k = 'e' then raise Exit
+      if k = 'e' then Graphics.close_graph ()
     ) else
   
     let up_ol, up_vl = Phys.update_state_naive !ol !ol !vl in
     ol := up_ol; vl := up_vl;
     Graph.clear_canvas ();
     List.iter Graph.draw_point !ol;
-    let _ = Unix.select [] [] [] Phys.dt in
+    ignore (Unix.select [] [] [] Phys.dt);
     simul ()
   in
   
-  Graph.init_canvas ();
   constr_pl ()
 
 let auto_naive_grav_simulation n =
@@ -69,17 +67,16 @@ let auto_naive_grav_simulation n =
   and vl = ref (List.init n (fun _ -> (0.,0.))) in
 
   let rec simul () =
-    if Graphics.key_pressed () && Graphics.read_key () = 'e' then raise Exit
+    if Graphics.key_pressed () && Graphics.read_key () = 'e' then Graphics.close_graph ()
     else
     let up_ol, up_vl = Phys.update_state_naive !ol !ol !vl in
     ol := up_ol; vl := up_vl;
     Graph.clear_canvas ();
     List.iter Graph.draw_point !ol;
-    let _ = Unix.select [] [] [] Phys.dt in
+    ignore (Unix.select [] [] [] Phys.dt);
     simul ()
   in
 
-  Graph.init_canvas ();
   simul ()
 
 
@@ -98,14 +95,14 @@ let manu_qt_grav_simulation () =
         Graph.draw_point (1.,x,y)
       );
       constr_pl ()
-    else if status.key = 'e' then raise Exit
+    else if status.key = 'e' then Graphics.close_graph ()
     else if status.key = ' ' then simul ()
 
   and simul () =
     if Graphics.key_pressed () then (
       let k = Graphics.read_key () in
       if k = ' ' then constr_pl () else
-      if k = 'e' then raise Exit
+      if k = 'e' then Graphics.close_graph ()
     ) else
     
     let qt = Qt.compute_cm (List.fold_left Qt.add_obj Qt.init_qt !ol) in
@@ -113,11 +110,10 @@ let manu_qt_grav_simulation () =
     ol := up_ol; vl := up_vl;
     Graph.clear_canvas ();
     List.iter Graph.draw_point !ol;
-    let _ = Unix.select [] [] [] Phys.dt in
+    ignore (Unix.select [] [] [] Phys.dt);
     simul ()
   in
   
-  Graph.init_canvas ();
   constr_pl ()
 
 
@@ -126,7 +122,7 @@ let auto_qt_grav_simulation n =
   and vl = ref (List.init n (fun _ -> (0.,0.))) in
 
   let rec simul () =
-    if Graphics.key_pressed () && Graphics.read_key () = 'e' then raise Exit
+    if Graphics.key_pressed () && Graphics.read_key () = 'e' then Graphics.close_graph ()
     else
     
     let qt = Qt.compute_cm (List.fold_left Qt.add_obj Qt.init_qt !ol) in
@@ -134,13 +130,42 @@ let auto_qt_grav_simulation n =
     ol := up_ol; vl := up_vl;
     Graph.clear_canvas ();
     List.iter Graph.draw_point !ol;
-    let _ = Unix.select [] [] [] Phys.dt in
+    ignore (Unix.select [] [] [] Phys.dt);
     simul ()
   in
 
-  Graph.init_canvas ();
   simul ()
 
 
 let () = 
-  manu_qt_grav_simulation ()
+  let n = 100 in
+  let function_list = [
+    (fun () -> static_quadtree n);
+    dynamic_quadtree;
+    manu_naive_grav_simulation;
+    (fun () -> auto_naive_grav_simulation n);
+    manu_qt_grav_simulation;
+    (fun () -> auto_qt_grav_simulation n)
+  ] in
+  let function_name_list = [
+    Printf.sprintf "Static quadtree representation of %d random objects" n;
+    "Interactive static quadtree representation";
+    "Interactive naive n-body problem simulation";
+    Printf.sprintf "Naive n-body problem simulation of %d random objects" n;
+    "Interactive n-body problem simulation using the quadtree structure";
+    Printf.sprintf "N-body problem simulation using the quadtree structure on %d random objects" n
+  ] in
+
+  Info.display_init_info function_name_list;
+
+  let rec poll_simtype () =
+    let c = (read_line ()).[0] in
+    if c = 'e' then Graphics.close_graph () else
+    let i = int_of_char c in
+    if 0 <= i-48 && i-48 <= (List.length function_list) - 1 then (
+      Graph.init_canvas ();
+      (List.nth function_list  (i-48)) ()
+    )
+    else poll_simtype ()
+  in
+  poll_simtype ()
