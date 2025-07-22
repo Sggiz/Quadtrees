@@ -7,8 +7,8 @@ let bg_color = Graphics.rgb 20 30 40
 let div_color = Graphics.rgb 97 161 225
 let point_color = Graphics.rgb 198 227 255
 
-let int_size_x, int_size_y = 1000, 1000
-let ext_size_x, ext_size_y = 1050, 1050
+let int_size_x, int_size_y = 600, 600
+let ext_size_x, ext_size_y = 650, 650
 let upper_margin = 40
 let correction_margin = 15
 let corner_x, corner_y = 
@@ -51,6 +51,10 @@ let rec draw_explore (qt:quadtree) =
         draw_div sp;
         draw_explore qt0; draw_explore qt1; draw_explore qt2; draw_explore qt3
 
+let full_clear () =
+    Graphics.set_color master_bg_color;
+    Graphics.fill_rect 0 (-1) ext_size_x ext_size_y
+
 let clear_canvas () =
     Graphics.set_color bg_color;
     Graphics.fill_rect 
@@ -62,9 +66,7 @@ let init_canvas () =
     Graphics.set_window_title "Quadtree graphic display";
     Graphics.set_line_width line_width;
 
-    Graphics.set_color master_bg_color;
-    Graphics.fill_rect 0 (-1) ext_size_x ext_size_y;
-
+    full_clear ();
     clear_canvas ()
 
 let display_quadtree qt =

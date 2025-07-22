@@ -4,18 +4,17 @@ module Graph = Lib.Graphics_qt
 module Phys = Lib.Physics_qt
 module Info = Lib.Info_display
 
+exception ExitToMenu
 
-let static_quadtree n =
+let exit_menu () =
+  Graphics.display_mode true;
+  Graph.full_clear ();
+  ignore @@ raise ExitToMenu
+
+
+let static_quadtree_ex n =
   let obj_list = Rand.gen_simple_obj_list n in
-  let qt = List.fold_left Qt.add_obj Qt.init_qt obj_list in
-
-  Graph.display_quadtree qt;
-  ignore (Graphics.wait_next_event [Graphics.Key_pressed]);
-  Graphics.close_graph ()
-
-
-let dynamic_quadtree () =
-  let qt = ref Qt.init_qt in
+  let qt = ref (List.fold_left Qt.add_obj Qt.init_qt obj_list) in
   
   let decision (s : Graphics.status) =
     if s.key = 'e' then raise Exit
@@ -23,16 +22,43 @@ let dynamic_quadtree () =
       let x, y = Graph.window_to_canvas (s.mouse_x, s.mouse_y) in
       if 0. <= x && x <= 1. && 0. <= y && y <= 1. then (
         qt := Qt.add_obj !qt (1., x, y);
-        Graph.display_quadtree !qt
+        Graph.display_quadtree !qt;
+        Graphics.synchronize ()
       ) end
   in
 
-  Graphics.loop_at_exit [Graphics.Button_down; Graphics.Key_pressed] decision
+  Graph.display_quadtree !qt;
+  Graphics.display_mode false;
+  Graphics.loop_at_exit [Graphics.Button_down; Graphics.Key_pressed] decision;
+  exit_menu ()
+
+let static_quadtree n =
+  let obj_list = Rand.gen_simple_obj_list n in
+  let qt = ref (List.fold_left Qt.add_obj Qt.init_qt obj_list) in
+
+  let rec decision () =
+    let s = Graphics.wait_next_event [Graphics.Button_down; Graphics.Key_pressed] in
+    if s.key = 'e' then exit_menu ()
+    else if s.button then begin
+      let x, y = Graph.window_to_canvas (s.mouse_x, s.mouse_y) in
+      if 0. <= x && x <= 1. && 0. <= y && y <= 1. then (
+        qt := Qt.add_obj !qt (1., x, y);
+        Graph.display_quadtree !qt;
+        Graphics.synchronize ()
+      );
+      decision ()
+    end
+    else decision ()
+  in
+
+  Graph.display_quadtree !qt;
+  Graphics.display_mode false;
+  decision ()
 
 
-let manu_naive_grav_simulation () =
-  let ol = ref []
-  and vl = ref [] in
+let naive_grav_simulation n =
+  let ol = ref @@ Rand.gen_simple_obj_list n
+  and vl = ref @@ List.init n (fun _ -> 0.,0.) in
 
   let rec constr_pl () =
     let status = Graphics.wait_next_event [Button_down; Key_pressed] in
@@ -46,14 +72,14 @@ let manu_naive_grav_simulation () =
         Graphics.synchronize( )
       );
       constr_pl ()
-    else if status.key = 'e' then Graphics.close_graph ()
+    else if status.key = 'e' then exit_menu ()
     else if status.key = ' ' then simul ()
 
   and simul () =
     if Graphics.key_pressed () then (
       let k = Graphics.read_key () in
       if k = ' ' then constr_pl () else
-      if k = 'e' then Graphics.close_graph ()
+      if k = 'e' then exit_menu ()
     ) else
   
     let up_ol, up_vl = Phys.update_state_naive !ol !ol !vl in
@@ -65,33 +91,14 @@ let manu_naive_grav_simulation () =
     simul ()
   in
   
+  List.iter Graph.draw_point !ol;
   Graphics.display_mode false;
   constr_pl ()
 
 
-let auto_naive_grav_simulation n =
-  let ol = ref (Rand.gen_simple_obj_list n)
-  and vl = ref (List.init n (fun _ -> (0.,0.))) in
-
-  let rec simul () =
-    if Graphics.key_pressed () && Graphics.read_key () = 'e' then Graphics.close_graph ()
-    else
-    let up_ol, up_vl = Phys.update_state_naive !ol !ol !vl in
-    ol := up_ol; vl := up_vl;
-    Graph.clear_canvas ();
-    List.iter Graph.draw_point !ol;
-    Graphics.synchronize ();
-    ignore (Unix.select [] [] [] Phys.dt);
-    simul ()
-  in
-
-  Graphics.display_mode false;
-  simul ()
-
-
-let manu_qt_grav_simulation () =
-  let ol = ref []
-  and vl = ref [] in
+let qt_grav_simulation n =
+  let ol = ref @@ Rand.gen_simple_obj_list n
+  and vl = ref @@ List.init n (fun _ -> 0.,0.) in
 
   let rec constr_pl () =
     let status = Graphics.wait_next_event [Button_down; Key_pressed] in
@@ -105,14 +112,14 @@ let manu_qt_grav_simulation () =
         Graphics.synchronize ()
       );
       constr_pl ()
-    else if status.key = 'e' then Graphics.close_graph ()
+    else if status.key = 'e' then exit_menu ()
     else if status.key = ' ' then simul ()
 
   and simul () =
     if Graphics.key_pressed () then (
       let k = Graphics.read_key () in
       if k = ' ' then constr_pl () else
-      if k = 'e' then Graphics.close_graph ()
+      if k = 'e' then exit_menu ()
     ) else
     
     let qt = Qt.compute_cm (List.fold_left Qt.add_obj Qt.init_qt !ol) in
@@ -125,63 +132,48 @@ let manu_qt_grav_simulation () =
     simul ()
   in
   
+  List.iter Graph.draw_point !ol;
   Graphics.display_mode false;
   constr_pl ()
-
-
-let auto_qt_grav_simulation n =
-  let ol = ref (Rand.gen_simple_obj_list n)
-  and vl = ref (List.init n (fun _ -> (0.,0.))) in
-
-  let rec simul () =
-    if Graphics.key_pressed () && Graphics.read_key () = 'e' then Graphics.close_graph ()
-    else
-    
-    let qt = Qt.compute_cm (List.fold_left Qt.add_obj Qt.init_qt !ol) in
-    let up_ol, up_vl = Phys.update_state qt !ol !vl in
-    ol := up_ol; vl := up_vl;
-    Graph.clear_canvas ();
-    List.iter Graph.draw_point !ol;
-    Graphics.synchronize ();
-    ignore (Unix.select [] [] [] Phys.dt);
-    simul ()
-  in
-
-  Graphics.display_mode false;
-  simul ()
 
 
 
 
 let () = 
-  let n = 3000 in
   let function_list = [
-    (fun () -> static_quadtree n);
-    dynamic_quadtree;
-    manu_naive_grav_simulation;
-    (fun () -> auto_naive_grav_simulation n);
-    manu_qt_grav_simulation;
-    (fun () -> auto_qt_grav_simulation n)
+    static_quadtree;
+    naive_grav_simulation;
+    qt_grav_simulation
   ] in
   let function_name_list = [
-    Printf.sprintf "Static quadtree representation of %d random objects" n;
-    "Interactive static quadtree representation";
-    "Interactive naive n-body problem simulation";
-    Printf.sprintf "Naive n-body problem simulation of %d random objects" n;
-    "Interactive n-body problem simulation using the quadtree structure";
-    Printf.sprintf "N-body problem simulation using the quadtree structure on %d random objects" n
+    "Static quadtree representation";
+    "Naive n-body problem simulation";
+    "N-body problem simulation using the quadtree structure"
   ] in
 
-  Info.display_init_info function_name_list;
-
   let rec poll_simtype () =
-    let c = (read_line ()).[0] in
-    if c = 'e' then Graphics.close_graph () else
-    let i = int_of_char c in
-    if 0 <= i-48 && i-48 <= (List.length function_list) - 1 then (
+    let s = Info.input_sim_type function_name_list in
+    if s = "e" || s = "exit" then (Graphics.close_graph (); -1) else
+    let i = int_of_string s in
+    if 0 <= i && i <= (List.length function_list) - 1 then i
+    (*  let n = Info.input_n () in
       Graph.init_canvas ();
-      (List.nth function_list  (i-48)) ()
-    )
+      (List.nth function_list  i) n
+    *)
     else poll_simtype ()
   in
-  poll_simtype ()
+
+  let rec decision () =
+    try begin
+      let i = poll_simtype () in
+      if i = -1 then () else (
+        let n = Info.input_n () in
+        Graph.clear_canvas ();
+        (List.nth function_list i) n
+      )
+    end
+    with ExitToMenu -> decision ()
+  in
+
+  Graph.init_canvas ();
+  decision ()
