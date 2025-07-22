@@ -4,6 +4,7 @@ module Graph = Lib.Graphics_qt
 module Phys = Lib.Physics_qt
 module Info = Lib.Info_display
 
+
 let static_quadtree n =
   let obj_list = Rand.gen_simple_obj_list n in
   let qt = List.fold_left Qt.add_obj Qt.init_qt obj_list in
@@ -12,20 +13,22 @@ let static_quadtree n =
   ignore (Graphics.wait_next_event [Graphics.Key_pressed]);
   Graphics.close_graph ()
 
+
 let dynamic_quadtree () =
   let qt = ref Qt.init_qt in
   
   let decision (s : Graphics.status) =
-    if not s.button then Graphics.close_graph ()
-    else 
+    if s.key = 'e' then raise Exit
+    else if s.button then begin
       let x, y = Graph.window_to_canvas (s.mouse_x, s.mouse_y) in
       if 0. <= x && x <= 1. && 0. <= y && y <= 1. then (
         qt := Qt.add_obj !qt (1., x, y);
         Graph.display_quadtree !qt
-      )
+      ) end
   in
 
   Graphics.loop_at_exit [Graphics.Button_down; Graphics.Key_pressed] decision
+
 
 let manu_naive_grav_simulation () =
   let ol = ref []
@@ -39,7 +42,8 @@ let manu_naive_grav_simulation () =
       if 0. <= x && x <= 1. && 0. <= y && y <= 1. then (
         ol := (1.,x,y) :: !ol;
         vl := (0.,0.) :: !vl;
-        Graph.draw_point (1.,x,y)
+        Graph.draw_point (1.,x,y);
+        Graphics.synchronize( )
       );
       constr_pl ()
     else if status.key = 'e' then Graphics.close_graph ()
@@ -56,11 +60,14 @@ let manu_naive_grav_simulation () =
     ol := up_ol; vl := up_vl;
     Graph.clear_canvas ();
     List.iter Graph.draw_point !ol;
+    Graphics.synchronize ();
     ignore (Unix.select [] [] [] Phys.dt);
     simul ()
   in
   
+  Graphics.display_mode false;
   constr_pl ()
+
 
 let auto_naive_grav_simulation n =
   let ol = ref (Rand.gen_simple_obj_list n)
@@ -73,10 +80,12 @@ let auto_naive_grav_simulation n =
     ol := up_ol; vl := up_vl;
     Graph.clear_canvas ();
     List.iter Graph.draw_point !ol;
+    Graphics.synchronize ();
     ignore (Unix.select [] [] [] Phys.dt);
     simul ()
   in
 
+  Graphics.display_mode false;
   simul ()
 
 
@@ -92,7 +101,8 @@ let manu_qt_grav_simulation () =
       if 0. <= x && x <= 1. && 0. <= y && y <= 1. then (
         ol := (1.,x,y) :: !ol;
         vl := (0.,0.) :: !vl;
-        Graph.draw_point (1.,x,y)
+        Graph.draw_point (1.,x,y);
+        Graphics.synchronize ()
       );
       constr_pl ()
     else if status.key = 'e' then Graphics.close_graph ()
@@ -110,10 +120,12 @@ let manu_qt_grav_simulation () =
     ol := up_ol; vl := up_vl;
     Graph.clear_canvas ();
     List.iter Graph.draw_point !ol;
+    Graphics.synchronize ();
     ignore (Unix.select [] [] [] Phys.dt);
     simul ()
   in
   
+  Graphics.display_mode false;
   constr_pl ()
 
 
@@ -130,15 +142,19 @@ let auto_qt_grav_simulation n =
     ol := up_ol; vl := up_vl;
     Graph.clear_canvas ();
     List.iter Graph.draw_point !ol;
+    Graphics.synchronize ();
     ignore (Unix.select [] [] [] Phys.dt);
     simul ()
   in
 
+  Graphics.display_mode false;
   simul ()
 
 
+
+
 let () = 
-  let n = 100 in
+  let n = 3000 in
   let function_list = [
     (fun () -> static_quadtree n);
     dynamic_quadtree;

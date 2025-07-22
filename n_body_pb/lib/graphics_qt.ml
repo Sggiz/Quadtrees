@@ -8,19 +8,24 @@ let div_color = Graphics.rgb 97 161 225
 let point_color = Graphics.rgb 198 227 255
 
 let int_size_x, int_size_y = 1000, 1000
-let ext_size_x, ext_size_y = 1600, 1100
+let ext_size_x, ext_size_y = 1050, 1050
+let upper_margin = 40
+let correction_margin = 15
+let corner_x, corner_y = 
+    (ext_size_x - int_size_x)/2 ,
+    (ext_size_y - int_size_y)/2
 
 let line_width = 3
 let point_radius = 1
 
 let canvas_to_window (x,y) =
-    let fx = (float (ext_size_x - int_size_x) )/.2. +. x *. float int_size_x
-    and fy = (float (ext_size_y - int_size_y) )/.2. +. y *. float int_size_y in
-    int_of_float fx, int_of_float fy
+    let fx = x *. float int_size_x
+    and fy = y *. float int_size_y in
+    corner_x + int_of_float fx, corner_y + int_of_float fy
 
 let window_to_canvas (px, py) =
-    (float px -. float (ext_size_x - int_size_x)/.2.) /. float int_size_x,
-    (float py -. float (ext_size_y - int_size_y)/.2.) /. float int_size_y
+    float (px - corner_x)/. float int_size_x,
+    float (py - corner_y) /. float int_size_y
 
 let draw_div ((x,y,l) : space_pos) =
     Graphics.set_color div_color;
@@ -46,24 +51,21 @@ let rec draw_explore (qt:quadtree) =
         draw_div sp;
         draw_explore qt0; draw_explore qt1; draw_explore qt2; draw_explore qt3
 
+let clear_canvas () =
+    Graphics.set_color bg_color;
+    Graphics.fill_rect 
+        (corner_x - 2*point_radius) (corner_y - 2*point_radius)
+        (int_size_x + 4*point_radius) (int_size_y + 4*point_radius)
+
 let init_canvas () =
-    Graphics.open_graph (" "^ string_of_int ext_size_x ^ "x" ^ string_of_int ext_size_y);
+    Graphics.open_graph (Printf.sprintf "%dx%d" (ext_size_x + correction_margin) (ext_size_y + upper_margin));
     Graphics.set_window_title "Quadtree graphic display";
     Graphics.set_line_width line_width;
 
     Graphics.set_color master_bg_color;
     Graphics.fill_rect 0 (-1) ext_size_x ext_size_y;
 
-    let init_co_bg_x, init_co_bg_y = canvas_to_window (0., 0.) in
-    Graphics.set_color bg_color;
-    Graphics.fill_rect init_co_bg_x init_co_bg_y int_size_x int_size_y
-
-let clear_canvas () =
-    let init_co_bg_x, init_co_bg_y = canvas_to_window (0., 0.) in
-    Graphics.set_color bg_color;
-    Graphics.fill_rect 
-        (init_co_bg_x - 2*point_radius) (init_co_bg_y - 2*point_radius) 
-        (int_size_x + 4*point_radius) (int_size_y + 4*point_radius)
+    clear_canvas ()
 
 let display_quadtree qt =
     clear_canvas ();
