@@ -7,16 +7,23 @@ let bg_color = Graphics.rgb 20 30 40
 let div_color = Graphics.rgb 97 161 225
 let point_color = Graphics.rgb 198 227 255
 
-let int_size_x, int_size_y = 600, 600
-let ext_size_x, ext_size_y = 650, 650
+let branch_color = Graphics.rgb 30 40 50
+let node_color = Graphics.rgb 100 115 125
+
+let hl_main_color = Graphics.rgb 0 200 0
+let hl_point_color = Graphics.rgb 200 0 0
+let hl_branch_color = Graphics.rgb 150 30 30
+
+let int_size_x, int_size_y = 500, 500
+let ext_size_x, ext_size_y = 550, 550
 let upper_margin = 40
 let correction_margin = 15
 let corner_x, corner_y = 
     (ext_size_x - int_size_x)/2 ,
     (ext_size_y - int_size_y)/2
 
-let line_width = 3
-let point_radius = 1
+let line_width = 1
+let point_radius = 2
 
 let canvas_to_window (x,y) =
     let fx = x *. float int_size_x
@@ -50,6 +57,77 @@ let rec draw_explore (qt:quadtree) =
     |Node(_, sp, qt0, qt1, qt2, qt3) ->
         draw_div sp;
         draw_explore qt0; draw_explore qt1; draw_explore qt2; draw_explore qt3
+
+let rec draw_branching (qt:quadtree) ((_,x,y):obj) =
+    let ix, iy = canvas_to_window (x,y) in
+    match qt with
+    |Void(_) -> ()
+    |Point((m,px,py), _) -> 
+        let ox, oy = canvas_to_window (px,py) in
+        Graphics.set_color branch_color;
+        Graphics.moveto ix iy;
+        Graphics.lineto ox oy;
+        draw_point (m,px,py)
+    |Node((m,px,py),_,qt0,qt1,qt2,qt3) ->
+        let ox, oy = canvas_to_window (px,py) in
+        Graphics.set_color branch_color;
+        Graphics.moveto ix iy;
+        Graphics.lineto ox oy;
+        Graphics.set_color node_color;
+        Graphics.fill_circle ox oy point_radius;
+        let a = [|qt0;qt1;qt2;qt3|] in
+        for i = 0 to 3 do
+            draw_branching a.(i) (m,px,py)
+        done
+
+let draw_highlight_calculation qt theta o =
+    let rec draw_sub (qt:quadtree) (ix, iy) =
+        match qt with
+        |Void(_) -> ()
+        |Point(o,_) ->
+            let _,x,y = o in
+            let jx, jy = canvas_to_window (x,y) in
+            Graphics.moveto ix iy;
+            Graphics.set_color hl_branch_color;
+            Graphics.lineto jx jy;
+            draw_point o
+        |Node(_,_,qt0,qt1,qt2,qt3) ->
+            draw_sub qt0 (ix,iy);
+            draw_sub qt1 (ix,iy);
+            draw_sub qt2 (ix,iy);
+            draw_sub qt3 (ix,iy)
+    in
+    let rec explore (qt:quadtree) theta o =
+        let _,x,y = o in
+        let ix, iy = canvas_to_window (x,y) in
+        match qt with
+        |Void(_) -> ()
+        |Point((_,px,py),_) ->
+            let jx, jy = canvas_to_window (px, py) in
+            Graphics.moveto ix iy;
+            Graphics.set_color hl_branch_color;
+            Graphics.lineto jx jy;
+            Graphics.set_color hl_point_color;
+            Graphics.fill_circle jx jy point_radius
+        |Node((_,px,py),(_,_,l),_,_,_,_) when l /. (sqrt ((px-.x)**2. +. (py-.y)**2.)) < theta ->
+            let jx, jy = canvas_to_window (px, py) in
+            Graphics.moveto ix iy;
+            Graphics.set_color hl_branch_color;
+            Graphics.lineto jx jy;
+            draw_sub qt (jx, jy);
+            Graphics.set_color hl_point_color;
+            Graphics.fill_circle jx jy point_radius
+        |Node(_,_,qt0,qt1,qt2,qt3) ->
+            let a = [|qt0;qt1;qt2;qt3|] in
+            for i = 0 to 3 do
+                explore a.(i) theta o
+            done
+    in 
+    explore qt theta o;
+    Graphics.set_color hl_main_color;
+    let _,x,y = o in
+    let ix, iy = canvas_to_window (x,y) in
+    Graphics.fill_circle ix iy point_radius
 
 let full_clear () =
     Graphics.set_color master_bg_color;

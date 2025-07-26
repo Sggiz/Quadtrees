@@ -4,7 +4,7 @@ type quadtree = Quadtree_str.quadtree
 let is_obj_in_node = Quadtree_str.is_obj_in_node
 
 let g = 0.0001 (*constante de gravitation*)
-let theta = 1.
+let theta = 2. /. 3.
 let dt = 1./.180.
 let d_lim = 0.01
 
