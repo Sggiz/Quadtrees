@@ -14,10 +14,16 @@ let hl_main_color = Graphics.rgb 0 200 0
 let hl_point_color = Graphics.rgb 200 0 0
 let hl_branch_color = Graphics.rgb 150 30 30
 
-let int_size_x, int_size_y = 500, 500
-let ext_size_x, ext_size_y = 550, 550
-let upper_margin = 40
-let correction_margin = 15
+let int_size_x, int_size_y = 800, 800
+let ext_size_x, ext_size_y = 850, 850
+let upper_margin = (
+  if Sys.win32 then 40
+  else 0
+)
+let correction_margin = (
+  if Sys.win32 then 15
+  else 0
+)
 let corner_x, corner_y = 
     (ext_size_x - int_size_x)/2 ,
     (ext_size_y - int_size_y)/2
@@ -140,7 +146,7 @@ let clear_canvas () =
         (int_size_x + 4*point_radius) (int_size_y + 4*point_radius)
 
 let init_canvas () =
-    Graphics.open_graph (Printf.sprintf "%dx%d" (ext_size_x + correction_margin) (ext_size_y + upper_margin));
+    Graphics.open_graph (Printf.sprintf " %dx%d" (ext_size_x + correction_margin) (ext_size_y + upper_margin));
     Graphics.set_window_title "Quadtree graphic display";
     Graphics.set_line_width line_width;
 

@@ -7,8 +7,7 @@ module Info = Lib.Info_display
 exception ExitToMenu
 
 let exit_menu () =
-  Graphics.display_mode true;
-  Graph.full_clear ();
+  Graphics.close_graph ();
   ignore @@ raise ExitToMenu
 
 
@@ -36,9 +35,9 @@ let static_quadtree n =
   decision ()
 
 
-let naive_grav_simulation n =
+ let naive_grav_simulation n =
   let ol = ref @@ Rand.gen_simple_obj_list n
-  and vl = ref @@ List.init n (fun _ -> 0.,0.) in
+  and vl = ref @@ List.init n (fun _ -> 0.,0.)in
 
   let rec constr_pl () =
     let status = Graphics.wait_next_event [Button_down; Key_pressed] in
@@ -67,7 +66,7 @@ let naive_grav_simulation n =
     Graph.clear_canvas ();
     List.iter Graph.draw_point !ol;
     Graphics.synchronize ();
-    ignore (Unix.select [] [] [] Phys.dt);
+    Unix.sleepf Phys.dt;
     simul ()
   in
   
@@ -108,7 +107,7 @@ let qt_grav_simulation n =
     Graph.clear_canvas ();
     List.iter Graph.draw_point !ol;
     Graphics.synchronize ();
-    ignore (Unix.select [] [] [] Phys.dt);
+    Unix.sleepf Phys.dt;
     simul ()
   in
   
@@ -151,7 +150,7 @@ let branching_qt_grav_simulation n =
     Graph.clear_canvas ();
     Graph.draw_branching qt (Qt.get_cm qt);
     Graphics.synchronize ();
-    ignore (Unix.select [] [] [] Phys.dt);
+    Unix.sleepf Phys.dt;
     simul ()
   in
   
@@ -195,7 +194,7 @@ let highlight_qt_grav_simulation n =
     Graph.clear_canvas ();
     Graph.draw_highlight_calculation qt Phys.theta (List.hd !ol);
     Graphics.synchronize ();
-    ignore (Unix.select [] [] [] Phys.dt);
+    Unix.sleepf Phys.dt;
     simul ()
   in
   
@@ -222,7 +221,7 @@ let () =
     "Branching visualisation of quadtree solution";
     "Highighted visualisation of quadtree calculation"
   ] in
-
+(*
   let rec poll_simtype () =
     let s = Info.input_sim_type function_name_list in
     if s = "e" || s = "exit" then (Graphics.close_graph (); -1) else
@@ -246,6 +245,20 @@ let () =
     end
     with ExitToMenu -> decision ()
   in
+*)
 
-  Graph.init_canvas ();
-  decision ()
+  let rec decision_loop () =
+    let s = Info.input_sim_type function_name_list in
+    if s = "e" || s = "exit" then ()
+    else
+    let i = int_of_string s in
+    if 0 <= i && i <= (List.length function_list) -1 then (
+      let n = Info.input_n () in
+      Graph.init_canvas ();
+      try (List.nth function_list i) n
+      with ExitToMenu -> decision_loop ()
+    )
+    else decision_loop ()
+  in
+
+  decision_loop ()
